@@ -4,7 +4,7 @@ import { useAppContext } from "../context/AppContext";
 
 
 const FoodCard = ({food}) => {
-    const { currency, addToCart, removeFromCart, cartItems, navigate} = useAppContext()
+    const { currency, addToCart, removeFromCart, cartItems, navigate, isChef} = useAppContext()
 
 
     return food && (
@@ -26,6 +26,8 @@ const FoodCard = ({food}) => {
                     <p className="md:text-xl text-base font-medium text-primary cursor-pointer">
                         {food.offerPrice}{currency}{" "} <span className="text-gray-500/60 md:text-sm text-xs line-through">{food.price}{currency}</span>
                     </p>
+                    {/* Only show Add to Cart if NOT chef */}
+                    {!isChef && (
                     <div onClick={(e) => { e.stopPropagation();}} className="text-primary">
                         {!cartItems[food._id] ? (
                             <button className="flex items-center justify-center gap-1 bg-primary/10 border border-primary/40 md:w-[80px] w-[64px] h-[34px] rounded cursor-pointer " onClick={() => addToCart(food._id)} >
@@ -44,6 +46,7 @@ const FoodCard = ({food}) => {
                             </div>
                         )}
                     </div>
+                    )}
                 </div>
             </div>
         </div>
