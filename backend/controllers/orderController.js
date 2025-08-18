@@ -7,7 +7,7 @@ import User from "../models/User.js";
 export const placeOrderCOD = async (req, res) => {
   try {
     const { items, address } = req.body;
-    const userId = req.userId; // ✅ From auth middleware
+    const userId = req.userId; // From auth middleware
 
     // Validate data
     if (!address || !items || items.length === 0) {
@@ -44,7 +44,7 @@ export const placeOrderCOD = async (req, res) => {
 export const placeOrderStripe = async (req, res) => {
   try {
     const { items, address } = req.body;
-    const userId = req.userId; // ✅ From auth middleware
+    const userId = req.userId; // From auth middleware
     const { origin } = req.headers;
 
     // Validate data
@@ -74,7 +74,11 @@ export const placeOrderStripe = async (req, res) => {
       amount,
       address,
       paymentType: "Online",
+      isPaid: true,
     });
+
+    // clear cart after successful paid order
+    await User.findByIdAndUpdate(userId, { cartItems: {} });
 
     //Stripe Gateway Initialize
     const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
@@ -84,11 +88,11 @@ export const placeOrderStripe = async (req, res) => {
     const line_items = foodData.map((item) => {
       return {
         price_data: {
-          currency: "usd",
+          currency: "bdt",
           product_data: {
             name: item.name,
           },
-          unit_amount: item.price
+          unit_amount: item.price * 100,
         },
         quantity: item.quantity,
       }
@@ -171,7 +175,7 @@ export const stripeWebhooks = async (request, response) => {
 // Get Orders by User ID : /api/order/user
 export const getUserOrders = async (req, res) => {
   try {
-    const userId = req.userId;  // get userId from auth middleware
+    const userId = req.userId;
 
     if (!userId) {
       return res.status(401).json({ success: false, message: "Not authorized" });
@@ -181,7 +185,7 @@ export const getUserOrders = async (req, res) => {
       userId,
       $or: [{ paymentType: "COD" }, { isPaid: true }]
     })
-      .populate("items.food")  // only populate food refs
+      .populate("items.food")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, orders });
@@ -213,7 +217,7 @@ export const getAllOrders = async (req, res) => {
         chefFoodIds.includes(item.food._id.toString())
       );
 
-      // ✅ Recalculate amount for this chef only
+      // Recalculate amount for this chef only
       const chefAmount = filteredItems.reduce((total, item) => {
         return total + item.food.offerPrice * item.quantity;
       }, 0);
@@ -221,7 +225,7 @@ export const getAllOrders = async (req, res) => {
       return {
         ...order.toObject(),
         items: filteredItems,
-        amount: chefAmount  // ✅ Now shows only chef's food value
+        amount: chefAmount  // Now shows only chef's food value
       };
     });
 
